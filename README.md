@@ -67,7 +67,16 @@ co-enrichment test:
 
 Clicking any node in the real (interactive) `network.html` opens that node's
 `neighborhood_PF*.html` — a plot of that domain's own neighborhood across
-high- vs. low-ratio contigs.
+high- vs. low-ratio contigs. For example, clicking the `PF15891` node (or
+running `plot_pfam_neighborhood.py` directly on it) shows every contig
+containing that domain, colored by which neighboring PFAMs they carry, split
+into high-ratio and low-ratio panels and ranked by ratio:
+
+```
+python plot_pfam_neighborhood.py data.tab PF15891.8 1000 10
+```
+
+![Example PF15891 neighborhood plot](docs/images/pf15891_neighborhood_example.png)
 
 ## How it works
 
