@@ -52,6 +52,23 @@ Standalone version of the neighborhood plot for a single PFAM domain:
 python plot_pfam_neighborhood.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff>
 ```
 
+## Example
+
+```
+python create_pfam_network.py data.tab PF00709.24 1000 10 2
+```
+
+`PF00709` (Adenylsucc_synt) is the seed domain (red). Nodes found by direct
+co-enrichment with the seed are depth 1 (blue); nodes found by recursing one
+more hop are depth 2 (orange). Edge thickness reflects −log₁₀(FDR q) of the
+co-enrichment test:
+
+![Example PF00709 co-enrichment network](docs/images/pf00709_network_example.png)
+
+Clicking any node in the real (interactive) `network.html` opens that node's
+`neighborhood_PF*.html` — a plot of that domain's own neighborhood across
+high- vs. low-ratio contigs.
+
 ## How it works
 
 Contigs are matched by name against `^(.+?_ratio_[\d.]+)-\d+[FR]$`, so each contig's
