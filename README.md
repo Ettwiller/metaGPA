@@ -52,6 +52,36 @@ Standalone version of the neighborhood plot for a single PFAM domain:
 python plot_pfam_neighborhood.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff>
 ```
 
+### `get_proteins.py`
+
+Extracts the amino-acid sequence for every hit of a PFAM domain, ranked from
+highest to lowest contig ratio, as a FASTA file.
+
+```
+python get_proteins.py <tab_file> <faa_file> <pfam_id> [ratio_cutoff] [--domain_only|--full_length] [--include_truncated]
+```
+
+Example:
+
+```
+python get_proteins.py data.tab proteins.faa PF00709.24 10 --domain_only
+```
+
+- `tab_file` — same domain table used by the other scripts.
+- `faa_file` — protein FASTA matching the tab file's contig IDs (see [Input format](#input-format)).
+- `pfam_id` — PFAM accession to extract, e.g. `PF00709.24`.
+- `ratio_cutoff` — optional. Only include contigs with ratio above this value.
+- `--domain_only` (default) — output just the aligned domain span.
+- `--full_length` — output the full ORF around the domain. Since `faa_file` is a raw
+  frame translation (not called ORFs) and contains `*` stop codons, the ORF is recovered
+  as: start = first `M` after the nearest upstream stop codon, end = the nearest
+  downstream stop codon (exclusive). If the domain isn't flanked by a stop codon on one
+  or both sides, that hit is skipped by default; pass `--include_truncated` to keep it
+  (best-effort boundary) with `(truncated)` noted in its header.
+
+Output is written next to `tab_file` as
+`<tab_basename>_<pfam_id>[_r<ratio_cutoff>]_<domain_only|full_length>.fasta`.
+
 ## Example
 
 ```
@@ -95,7 +125,13 @@ Whitespace-delimited domain table (e.g. hmmscan `--domtblout`) with at least 19 
 - column 1: contig/sequence ID, must match `<name>_ratio_<float>-<index><F|R>`
 - column 4: PFAM domain name
 - column 5: PFAM accession (e.g. `PF00005.30`)
-- columns 18–19: alignment start/end coordinates
+- columns 18–19: alignment start/end coordinates (amino-acid positions on the query
+  sequence identified in column 1 — not contig base-pair positions)
+
+`get_proteins.py` additionally needs a standard FASTA (`.faa`, `>id` header + sequence,
+optionally wrapped) with one record per column-1 ID from the tab file — e.g. a 3-/6-frame
+translation of each contig, which is why sequences may contain `*` stop codons (see
+`--full_length` above).
 
 ## Dependencies
 
@@ -105,3 +141,5 @@ pip install scipy statsmodels requests
 
 `d3.min.js` is vendored in this repo; if missing, `pfam_coenrichment_network.py` will
 download it from cdnjs on first run (requires `requests` and network access).
+
+`get_proteins.py` uses only the standard library — no extra dependencies.
