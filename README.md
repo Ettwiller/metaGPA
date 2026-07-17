@@ -83,6 +83,44 @@ python get_proteins.py data.tab proteins.faa PF00709.24 10 --domain_only
 Output is written next to `tab_file` as
 `<tab_basename>_<pfam_id>[_r<ratio_cutoff>]_<domain_only|full_length>.fasta`.
 
+### `build_pfam_tree.py`
+
+Builds a MAFFT alignment and FastTree phylogeny for a PFAM domain, plus a mapping
+file for coloring the tree by enrichment ratio. Reuses `get_proteins.py`'s extraction
+logic, but — unlike `get_proteins.py` — includes every hit regardless of ratio
+(duplicates are still removed); `ratio_cutoff` is used only to color each leaf as
+"selected" (ratio ≥ cutoff) or "unselected", not to filter which hits are included.
+
+```
+python build_pfam_tree.py <tab_file> <faa_file> <pfam_id> <ratio_cutoff> [--domain_only|--full_length] [--include_truncated]
+```
+
+Example:
+
+```
+python build_pfam_tree.py data.tab proteins.faa PF00709.24 10 --domain_only
+```
+
+- `tab_file`, `faa_file`, `pfam_id` — same as `get_proteins.py`.
+- `ratio_cutoff` — required. Hits with ratio ≥ this are colored "selected"; below it,
+  "unselected". Does not filter which sequences are included.
+- `--domain_only` / `--full_length` / `--include_truncated` — same as `get_proteins.py`.
+
+Each unique sequence gets an ID of the form `<S|unselected>_<n>_<ratio>` (e.g.
+`S_1_17.7`, `unselected_9_4.3`) — unique, used as-is in the FASTA, alignment, tree,
+and mapping file. Output is written to a folder next to `tab_file` named
+`<tab_basename>_<pfam_id>_r<ratio_cutoff>_<domain_only|full_length>_tree/`, containing:
+
+- `sequences.fasta` — unaligned, deduplicated sequences.
+- `aligned.fasta` — MAFFT alignment (`mafft --maxiterate 1000 --localpair`).
+- `tree.nwk` — FastTree phylogeny (`FastTree -gamma`), built from the alignment.
+- `mapping.txt` — tab-separated `name`, `leaf_dot_color`, `leaf_label_color`,
+  `bar1_height`, `bar1_gradient` columns for annotating the tree: selected leaves get
+  `bp_green`/`ptm_rose`, unselected get `k_grey`/`ptm_sand`; `bar1_height` is the
+  contig's ratio.
+
+Requires `mafft` and `FastTree` (or `fasttree`) on `PATH` — see [Dependencies](#dependencies).
+
 ## Example
 
 ```
@@ -144,3 +182,10 @@ pip install scipy statsmodels requests
 download it from cdnjs on first run (requires `requests` and network access).
 
 `get_proteins.py` uses only the standard library — no extra dependencies.
+
+`build_pfam_tree.py` additionally requires [MAFFT](https://mafft.cbrc.jp/alignment/software/)
+and [FastTree](http://www.microbesonline.org/fasttree/) on `PATH`, e.g.:
+
+```
+conda install -c bioconda mafft fasttree
+```
