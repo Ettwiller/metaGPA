@@ -89,17 +89,17 @@ def extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, inclu
         if protein is None:
             continue
 
-        truncated = False
+        orf_start, orf_end, flanked = gp.find_orf_bounds(protein, h['start'], h['end'])
+        truncated = not flanked
+        if truncated and not include_truncated:
+            n_skipped_truncated += 1
+            continue
+
         if mode == 'domain_only':
             start = max(h['start'], 1)
             end   = min(h['end'], len(protein))
             seq = protein[start - 1:end]
         else:
-            orf_start, orf_end, flanked = gp.find_orf_bounds(protein, h['start'], h['end'])
-            truncated = not flanked
-            if truncated and not include_truncated:
-                n_skipped_truncated += 1
-                continue
             seq = protein[orf_start:orf_end]
 
         if seq in seen_seqs:
@@ -195,7 +195,7 @@ def main():
         for r in records:
             f.write(f">{r['name']}\n{r['seq']}\n")
 
-    run([mafft_bin, '--maxiterate', '1000', '--localpair', seq_path], aligned_path, "MAFFT")
+    run([mafft_bin, '--maxiterate', '2', '--localpair', seq_path], aligned_path, "MAFFT")
     run([fasttree_bin, '-gamma', aligned_path], tree_path, "FastTree")
 
     with open(mapping_path, 'w') as f:

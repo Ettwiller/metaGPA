@@ -72,13 +72,16 @@ python get_proteins.py data.tab proteins.faa PF00709.24 10 --domain_only
 - `faa_file` — protein FASTA matching the hmmer output's contig IDs (see [Input format](#input-format)).
 - `pfam_id` — PFAM accession to extract, e.g. `PF00709.24`.
 - `ratio_cutoff` — optional. Only include contigs with ratio at or above this value.
-- `--domain_only` (default) — output just the aligned domain span.
-- `--full_length` — output the full ORF around the domain. Since `faa_file` is a raw
-  frame translation (not called ORFs) and contains `*` stop codons, the ORF is recovered
-  as: start = first `M` after the nearest upstream stop codon, end = the nearest
-  downstream stop codon (exclusive). If the domain isn't flanked by a stop codon on one
-  or both sides, that hit is skipped by default; pass `--include_truncated` to keep it
-  (best-effort boundary) with `(truncated)` noted in its header.
+Since `faa_file` is a raw frame translation (not called ORFs) and contains `*` stop
+codons, the ORF around the domain is located as: start = first `M` after the nearest
+upstream stop codon, end = the nearest downstream stop codon (exclusive). This check
+applies in both modes below — if the domain's surrounding ORF isn't flanked by a stop
+codon on one or both sides, that hit is skipped by default; pass `--include_truncated`
+to keep it (best-effort boundary) with `(truncated)` noted in its header.
+
+- `--domain_only` (default) — output just the aligned domain span (still requires the
+  surrounding ORF to be stop-codon-flanked, per above).
+- `--full_length` — output the full ORF span instead of just the domain.
 
 Output is written next to `tab_file` as
 `<tab_basename>_<pfam_id>[_r<ratio_cutoff>]_<domain_only|full_length>.fasta`.
@@ -112,7 +115,7 @@ and mapping file. Output is written to a folder next to `tab_file` named
 `<tab_basename>_<pfam_id>_r<ratio_cutoff>_<domain_only|full_length>_tree/`, containing:
 
 - `sequences.fasta` — unaligned, deduplicated sequences.
-- `aligned.fasta` — MAFFT alignment (`mafft --maxiterate 1000 --localpair`).
+- `aligned.fasta` — MAFFT alignment (`mafft --maxiterate 2 --localpair`).
 - `tree.nwk` — FastTree phylogeny (`FastTree -gamma`), built from the alignment.
 - `mapping.txt` — tab-separated `name`, `leaf_dot_color`, `leaf_label_color`,
   `bar1_height`, `bar1_gradient` columns for annotating the tree: selected leaves get

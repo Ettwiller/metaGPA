@@ -9,13 +9,15 @@ full-length ORF around it. Sequences are written out ranked from highest
 to lowest contig ratio; if two or more hits yield the exact same sequence,
 only the highest-ratio instance is kept.
 
-In --full_length mode, since <faa_file> is a whole-contig frame translation
-(not called ORFs) and contains '*' stop codons, the ORF around the domain is
-recovered as: start = first 'M' after the nearest upstream stop codon,
-end = the nearest downstream stop codon (exclusive). If the domain isn't
-flanked by a stop codon on one or both sides, that record is skipped by
-default; pass --include_truncated to keep it (best-effort boundary) with
-"(truncated)" noted in its header.
+Since <faa_file> is a whole-contig frame translation (not called ORFs) and
+contains '*' stop codons, the ORF around the domain is located as: start =
+first 'M' after the nearest upstream stop codon, end = the nearest
+downstream stop codon (exclusive). This check applies in both modes: if
+the domain's surrounding ORF isn't flanked by a stop codon on one or both
+sides, that record is skipped by default (even in --domain_only mode);
+pass --include_truncated to keep it (best-effort boundary) with
+"(truncated)" noted in its header. --full_length outputs the full ORF span;
+--domain_only still outputs just the aligned domain span.
 
 Usage:
     python get_proteins.py <tab_file> <faa_file> <pfam_id> [ratio_cutoff] [--domain_only|--full_length] [--include_truncated]
@@ -196,17 +198,17 @@ def main():
             if protein is None:
                 continue
 
-            truncated = False
+            orf_start, orf_end, flanked = find_orf_bounds(protein, h['start'], h['end'])
+            truncated = not flanked
+            if truncated and not include_truncated:
+                n_skipped_truncated += 1
+                continue
+
             if mode == 'domain_only':
                 start = max(h['start'], 1)
                 end   = min(h['end'], len(protein))
                 seq = protein[start - 1:end]
             else:
-                orf_start, orf_end, flanked = find_orf_bounds(protein, h['start'], h['end'])
-                truncated = not flanked
-                if truncated and not include_truncated:
-                    n_skipped_truncated += 1
-                    continue
                 seq = protein[orf_start:orf_end]
 
             if seq in seen_seqs:
