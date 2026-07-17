@@ -76,8 +76,8 @@ def find_enriched(data, ref_prefix, window, ratio_cut):
             pfam_name_map[a['pfam_id']] = a['pfam_name']
         rows.append({'ratio': get_ratio(base), 'neighbors': neighbors})
 
-    above = [r for r in rows if r['ratio'] >  ratio_cut]
-    below = [r for r in rows if r['ratio'] <= ratio_cut]
+    above = [r for r in rows if r['ratio'] >= ratio_cut]
+    below = [r for r in rows if r['ratio'] <  ratio_cut]
     if not above:
         return []
 
@@ -244,7 +244,7 @@ def render_html(node_list, edge_list, seed_pfam_id, window, ratio_cut):
   <button onclick="window.print()">&#8659; PDF</button>
 </div>
 <div id="info">
-  <b>{seed_pfam_id}</b> co-enrichment network &nbsp;|&nbsp; ±{window} bp &nbsp;|&nbsp; ratio &gt; {ratio_cut}<br>
+  <b>{seed_pfam_id}</b> co-enrichment network &nbsp;|&nbsp; ±{window} bp &nbsp;|&nbsp; ratio &ge; {ratio_cut}<br>
   {n_nodes} nodes &nbsp;|&nbsp; {n_edges} edges &nbsp;|&nbsp; edge thickness ∝ −log₁₀(FDR q)<br>
   <span style="color:#888">scroll=zoom &nbsp;·&nbsp; drag=pan &nbsp;·&nbsp; drag node=move &nbsp;·&nbsp; click=EBI</span>
 </div>

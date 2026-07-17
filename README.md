@@ -24,7 +24,7 @@ python create_pfam_network.py data.tab PF05014.22 1000 10 3
 - `tab_file` — hmmscan/hmmsearch-style domain table (whitespace-delimited).
 - `pfam_id` — seed PFAM accession, e.g. `PF05014.22`.
 - `window_bp` — ± window (bp) around the seed domain to look for neighboring domains.
-- `ratio_cutoff` — contigs with ratio above this are "high-ratio"; used for enrichment testing.
+- `ratio_cutoff` — contigs with ratio at or above this are "high-ratio"; used for enrichment testing.
 - `max_depth` — optional, default `3`. How many recursive hops from the seed to follow when
   expanding the network.
 
@@ -55,7 +55,8 @@ python plot_pfam_neighborhood.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff>
 ### `get_proteins.py`
 
 Extracts the amino-acid sequence for every hit of a PFAM domain, ranked from
-highest to lowest contig ratio, as a FASTA file.
+highest to lowest contig ratio, as a FASTA file. If two or more hits produce
+the exact same sequence, only the highest-ratio instance is kept.
 
 ```
 python get_proteins.py <tab_file> <faa_file> <pfam_id> [ratio_cutoff] [--domain_only|--full_length] [--include_truncated]
@@ -68,9 +69,9 @@ python get_proteins.py data.tab proteins.faa PF00709.24 10 --domain_only
 ```
 
 - `tab_file` — same domain table used by the other scripts.
-- `faa_file` — protein FASTA matching the tab file's contig IDs (see [Input format](#input-format)).
+- `faa_file` — protein FASTA matching the hmmer output's contig IDs (see [Input format](#input-format)).
 - `pfam_id` — PFAM accession to extract, e.g. `PF00709.24`.
-- `ratio_cutoff` — optional. Only include contigs with ratio above this value.
+- `ratio_cutoff` — optional. Only include contigs with ratio at or above this value.
 - `--domain_only` (default) — output just the aligned domain span.
 - `--full_length` — output the full ORF around the domain. Since `faa_file` is a raw
   frame translation (not called ORFs) and contains `*` stop codons, the ORF is recovered
@@ -112,7 +113,7 @@ python plot_pfam_neighborhood.py data.tab PF15891.8 1000 10
 
 Contigs are matched by name against `^(.+?_ratio_[\d.]+)-\d+[FR]$`, so each contig's
 ratio is parsed straight out of its ID. For a given PFAM domain, contigs are split into
-"high-ratio" (`ratio > ratio_cutoff`) and "low-ratio" groups. For every other PFAM found
+"high-ratio" (`ratio >= ratio_cutoff`) and "low-ratio" groups. For every other PFAM found
 within `window_bp` of the reference domain, a Fisher's exact test (BH-FDR corrected,
 q < 0.05) checks whether it's enriched in the high-ratio group. `create_pfam_network.py`
 recurses this process outward from the seed domain up to `max_depth` hops, building a graph
@@ -129,7 +130,7 @@ Whitespace-delimited domain table (e.g. hmmscan `--domtblout`) with at least 19 
   sequence identified in column 1 — not contig base-pair positions)
 
 `get_proteins.py` additionally needs a standard FASTA (`.faa`, `>id` header + sequence,
-optionally wrapped) with one record per column-1 ID from the tab file — e.g. a 3-/6-frame
+optionally wrapped) with one record per column-1 ID from the hmmer output — e.g. a 3-/6-frame
 translation of each contig, which is why sequences may contain `*` stop codons (see
 `--full_length` above).
 

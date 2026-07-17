@@ -6,7 +6,8 @@ For every hit of <pfam_id> in <tab_file>, looks up the corresponding raw
 frame-translation sequence in <faa_file> (matched by the contig ID in
 column 1) and extracts either just the aligned domain span or the
 full-length ORF around it. Sequences are written out ranked from highest
-to lowest contig ratio.
+to lowest contig ratio; if two or more hits yield the exact same sequence,
+only the highest-ratio instance is kept.
 
 In --full_length mode, since <faa_file> is a whole-contig frame translation
 (not called ORFs) and contains '*' stop codons, the ORF around the domain is
@@ -72,7 +73,7 @@ def find_hits(tab_file, pfam_id, ratio_cutoff):
                 continue
             contig_id = parts[0]
             ratio = get_ratio(contig_id)
-            if ratio_cutoff is not None and ratio <= ratio_cutoff:
+            if ratio_cutoff is not None and ratio < ratio_cutoff:
                 continue
             hits.append({
                 'contig_id': contig_id,
@@ -161,7 +162,7 @@ def main():
     print(f"PFAM           : {pfam_id}")
     print(f"Mode           : {mode}")
     if ratio_cutoff is not None:
-        print(f"Ratio cutoff   : > {ratio_cutoff}")
+        print(f"Ratio cutoff   : >= {ratio_cutoff}")
 
     hits = find_hits(tab_file, pfam_id, ratio_cutoff)
     print(f"Domain hits    : {len(hits)}")
@@ -187,6 +188,8 @@ def main():
     n_written = 0
     n_truncated = 0
     n_skipped_truncated = 0
+    n_duplicates = 0
+    seen_seqs = set()
     with open(out_path, 'w') as out:
         for h in hits:
             protein = seqs.get(h['contig_id'])
@@ -206,6 +209,11 @@ def main():
                     continue
                 seq = protein[orf_start:orf_end]
 
+            if seq in seen_seqs:
+                n_duplicates += 1
+                continue
+            seen_seqs.add(seq)
+
             header = (f">{h['contig_id']} ratio={h['ratio']} pfam={h['pfam_full']} "
                       f"domain={h['start']}-{h['end']} dom={h['dom_num']}/{h['dom_of']}")
             if truncated:
@@ -217,6 +225,9 @@ def main():
 
     print(f"Sequences      : {n_written} written"
           + (f" ({n_truncated} truncated)" if n_truncated else ""))
+    if n_duplicates:
+        print(f"Deduplicated   : {n_duplicates} identical sequence(s) dropped "
+              f"(kept highest-ratio instance)")
     if n_skipped_truncated:
         print(f"Skipped        : {n_skipped_truncated} not flanked by stop codons "
               f"(use --include_truncated to keep)")

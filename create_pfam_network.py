@@ -82,7 +82,7 @@ def render_network_html(node_list, edge_list, seed_pfam_id, window, ratio_cut, d
   <button onclick="window.print()">&#8659; PDF</button>
 </div>
 <div id="info">
-  <b>{seed_pfam_id}</b> co-enrichment network &nbsp;|&nbsp; ±{window} bp &nbsp;|&nbsp; ratio &gt; {ratio_cut}<br>
+  <b>{seed_pfam_id}</b> co-enrichment network &nbsp;|&nbsp; ±{window} bp &nbsp;|&nbsp; ratio &ge; {ratio_cut}<br>
   {n_nodes} nodes &nbsp;|&nbsp; {n_edges} edges &nbsp;|&nbsp; edge thickness ∝ −log₁₀(FDR q)<br>
   <span style="color:#888">
     scroll=zoom &nbsp;·&nbsp; drag=pan &nbsp;·&nbsp; drag node=move<br>

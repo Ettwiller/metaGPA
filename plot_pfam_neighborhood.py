@@ -94,15 +94,15 @@ def build_js_data(data, ref_pfam_id, window, ratio_cut):
     for base, anns in pf_contigs.items():
         ratio = get_ratio(base)
         neighbors = get_neighbors(anns, ref_prefix, window)
-        if ratio > ratio_cut:
+        if ratio >= ratio_cut:
             for a in neighbors:
                 high_pfams.add(a['pfam_id'])
         rows.append({'base': base, 'ratio': ratio, 'neighbors': neighbors})
 
     rows.sort(key=lambda x: -x['ratio'])
 
-    above = [r for r in rows if r['ratio'] >  ratio_cut]
-    below = [r for r in rows if r['ratio'] <= ratio_cut]
+    above = [r for r in rows if r['ratio'] >= ratio_cut]
+    below = [r for r in rows if r['ratio'] <  ratio_cut]
     n_above, n_below = len(above), len(below)
 
     all_pfam_ids = sorted({a['pfam_id'] for r in rows for a in r['neighbors']})
@@ -264,11 +264,11 @@ def render_html(js_data):
 <div id="tooltip"></div>
 <h1>{ref_pfam} Neighborhood &plusmn;{window} bp</h1>
 <p style="font-size:10px;color:#555;margin:2px 0 8px">
-  Colored fill = PFAM found in ratio&gt;{ratio_cut} contigs. Outline only = not found in high-ratio contigs.
+  Colored fill = PFAM found in ratio&ge;{ratio_cut} contigs. Outline only = not found in high-ratio contigs.
   <b>Hover</b> on any box to see name and overlapping annotations.
 </p>
 <div id="legend">
-  <h2>Legend &mdash; PFAMs present in ratio &gt; {ratio_cut} contigs
+  <h2>Legend &mdash; PFAMs present in ratio &ge; {ratio_cut} contigs
     &nbsp;<span style="font-size:10px;font-weight:normal;color:#555">
     <span style="color:#c00">&#9733;</span> FDR q&lt;0.05 (BH) &nbsp;|&nbsp;
     <span style="color:#e07000">&#9670;</span> nominal p&lt;0.05 (dashed border on plot)
@@ -487,8 +487,8 @@ function buildSection(rows, title, inAbove) {{
 }}
 
 const app = document.getElementById('app');
-app.appendChild(buildSection(DATA.above, `Ratio > ${{DATA.ratio_cut}}  (n=${{DATA.above.length}})`, true));
-app.appendChild(buildSection(DATA.below, `Ratio ≤ ${{DATA.ratio_cut}}  (n=${{DATA.below.length}})`, false));
+app.appendChild(buildSection(DATA.above, `Ratio ≥ ${{DATA.ratio_cut}}  (n=${{DATA.above.length}})`, true));
+app.appendChild(buildSection(DATA.below, `Ratio < ${{DATA.ratio_cut}}  (n=${{DATA.below.length}})`, false));
 
 // ── PNG download ──────────────────────────────────────────────────────────────
 async function downloadPNG() {{
