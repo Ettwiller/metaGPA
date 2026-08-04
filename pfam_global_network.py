@@ -12,7 +12,7 @@ Clicking a node opens its neighborhood plot (like create_pfam_network.py);
 shift+click opens the EBI InterPro page instead.
 
 Usage:
-    python pfam_global_network.py <tab_file> <ratio_cutoff> [fdr_threshold] [min_contigs] [window_bp]
+    python pfam_global_network.py --hmmer_output <tab_file> --ratio <ratio_cutoff> [--fdr <fdr_threshold>] [--min_contigs N] [--window <window_bp>]
 
 Arguments:
     tab_file        HMMER-format PFAM annotation file
@@ -28,9 +28,9 @@ Arguments:
                     this threshold are kept.
 
 Example:
-    python pfam_global_network.py all_contigs.nd_pfam_with_enrichment.tab 10
-    python pfam_global_network.py all_contigs.nd_pfam_with_enrichment.tab 10 0.05 5 1000
-    python pfam_global_network.py all_contigs.nd_pfam_with_enrichment.tab 10 --hmmer_evalue_max 1e-5
+    python pfam_global_network.py --hmmer_output all_contigs.nd_pfam_with_enrichment.tab --ratio 10
+    python pfam_global_network.py --hmmer_output all_contigs.nd_pfam_with_enrichment.tab --ratio 10 --fdr 0.05 --min_contigs 5 --window 1000
+    python pfam_global_network.py --hmmer_output all_contigs.nd_pfam_with_enrichment.tab --ratio 10 --hmmer_evalue_max 1e-5
 """
 
 import re, json, sys, os, math, urllib.request, io, contextlib, importlib.util
@@ -51,23 +51,16 @@ nb = _load_sibling('plot_pfam_neighborhood')
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 def parse_args():
-    args = sys.argv[1:]
-
-    hmmer_evalue_max = None
-    if '--hmmer_evalue_max' in args:
-        idx = args.index('--hmmer_evalue_max')
-        hmmer_evalue_max = float(args[idx + 1])
-        del args[idx:idx + 2]
-
-    if len(args) not in (2, 3, 4, 5):
-        print(__doc__)
-        sys.exit(1)
-    tab_file      = args[0]
-    ratio_cut     = float(args[1])
-    fdr_threshold = float(args[2]) if len(args) >= 3 else 0.05
-    min_contigs   = int(args[3])   if len(args) >= 4 else 3
-    window_bp     = int(args[4])   if len(args) >= 5 else 1000
-    return tab_file, ratio_cut, fdr_threshold, min_contigs, window_bp, hmmer_evalue_max
+    import argparse
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument('--hmmer_output',     required=True, metavar='TAB_FILE',      help='HMMER-format PFAM annotation tab file')
+    p.add_argument('--ratio',            required=True, metavar='RATIO_CUTOFF',  type=float, help='Enrichment ratio cutoff')
+    p.add_argument('--fdr',              default=0.05,  metavar='FDR_THRESHOLD', type=float, help='BH/FDR q-value cutoff (default: 0.05)')
+    p.add_argument('--min_contigs',      default=3,     metavar='N',             type=int,   help='Min high-ratio contigs per PFAM to test (default: 3)')
+    p.add_argument('--window',           default=1000,  metavar='WINDOW_BP',     type=int,   help='Window in bp for neighborhood plots (default: 1000)')
+    p.add_argument('--hmmer_evalue_max', default=None,  metavar='VALUE',         type=float, help='Max i-Evalue for HMMER hits')
+    a = p.parse_args()
+    return a.hmmer_output, a.ratio, a.fdr, a.min_contigs, a.window, a.hmmer_evalue_max
 
 
 # ── Data loading ───────────────────────────────────────────────────────────────

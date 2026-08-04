@@ -6,10 +6,10 @@ Plot PFAM neighborhood around a reference PFAM domain.
 column 13 of the tab file): only hits with i-Evalue < this threshold are kept.
 
 Usage:
-    python plot_pfam_neighborhood.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [--hmmer_evalue_max VALUE]
+    python plot_pfam_neighborhood.py --hmmer_output <tab_file> --hmm_id <pfam_id> --window <window_bp> --ratio <ratio_cutoff> [--hmmer_evalue_max VALUE]
 
 Example:
-    python plot_pfam_neighborhood.py data.tab PF05014.22 1000 10 --hmmer_evalue_max 1e-5
+    python plot_pfam_neighborhood.py --hmmer_output data.tab --hmm_id PF05014.22 --window 1000 --ratio 10 --hmmer_evalue_max 1e-5
 """
 
 import re, json, colorsys, sys, os
@@ -19,22 +19,15 @@ from statsmodels.stats.multitest import multipletests
 
 
 def parse_args():
-    args = sys.argv[1:]
-
-    hmmer_evalue_max = None
-    if '--hmmer_evalue_max' in args:
-        idx = args.index('--hmmer_evalue_max')
-        hmmer_evalue_max = float(args[idx + 1])
-        del args[idx:idx + 2]
-
-    if len(args) != 4:
-        print(__doc__)
-        sys.exit(1)
-    tab_file   = args[0]
-    pfam_id    = args[1]   # e.g. PF05014.22  (prefix match used)
-    window     = int(args[2])
-    ratio_cut  = float(args[3])
-    return tab_file, pfam_id, window, ratio_cut, hmmer_evalue_max
+    import argparse
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument('--hmmer_output',     required=True, metavar='TAB_FILE',      help='HMMER-format PFAM annotation tab file')
+    p.add_argument('--hmm_id',           required=True, metavar='PFAM_ID',       help='PFAM domain ID (e.g. PF05014.22)')
+    p.add_argument('--window',           required=True, metavar='WINDOW_BP',     type=int,   help='Window in bp around reference domain')
+    p.add_argument('--ratio',            required=True, metavar='RATIO_CUTOFF',  type=float, help='Enrichment ratio cutoff')
+    p.add_argument('--hmmer_evalue_max', default=None,  metavar='VALUE',         type=float, help='Max i-Evalue for HMMER hits')
+    a = p.parse_args()
+    return a.hmmer_output, a.hmm_id, a.window, a.ratio, a.hmmer_evalue_max
 
 
 def load_data(tab_file, hmmer_evalue_max=None):

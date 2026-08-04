@@ -10,10 +10,10 @@ significant associations are found. Outputs an interactive D3 force-directed net
 column 13 of the tab file): only hits with i-Evalue < this threshold are kept.
 
 Usage:
-    python pfam_coenrichment_network.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [max_depth] [--hmmer_evalue_max VALUE]
+    python pfam_coenrichment_network.py --hmmer_output <tab_file> --hmm_id <pfam_id> --window <window_bp> --ratio <ratio_cutoff> [--max_depth N] [--hmmer_evalue_max VALUE]
 
 Example:
-    python pfam_coenrichment_network.py data.tab PF05014.22 1000 10 3 --hmmer_evalue_max 1e-5
+    python pfam_coenrichment_network.py --hmmer_output data.tab --hmm_id PF05014.22 --window 1000 --ratio 10 --max_depth 3 --hmmer_evalue_max 1e-5
 """
 
 import re, json, sys, os, math
@@ -23,19 +23,16 @@ from statsmodels.stats.multitest import multipletests
 
 
 def parse_args():
-    args = sys.argv[1:]
-
-    hmmer_evalue_max = None
-    if '--hmmer_evalue_max' in args:
-        idx = args.index('--hmmer_evalue_max')
-        hmmer_evalue_max = float(args[idx + 1])
-        del args[idx:idx + 2]
-
-    if len(args) not in (4, 5):
-        print(__doc__)
-        sys.exit(1)
-    max_depth = int(args[4]) if len(args) == 5 else 3
-    return args[0], args[1], int(args[2]), float(args[3]), max_depth, hmmer_evalue_max
+    import argparse
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument('--hmmer_output',     required=True, metavar='TAB_FILE',      help='HMMER-format PFAM annotation tab file')
+    p.add_argument('--hmm_id',           required=True, metavar='PFAM_ID',       help='Seed PFAM domain ID (e.g. PF05014.22)')
+    p.add_argument('--window',           required=True, metavar='WINDOW_BP',     type=int,   help='Window in bp around seed domain')
+    p.add_argument('--ratio',            required=True, metavar='RATIO_CUTOFF',  type=float, help='Enrichment ratio cutoff')
+    p.add_argument('--max_depth',        default=3,     metavar='N',             type=int,   help='Recursion depth (default: 3)')
+    p.add_argument('--hmmer_evalue_max', default=None,  metavar='VALUE',         type=float, help='Max i-Evalue for HMMER hits')
+    a = p.parse_args()
+    return a.hmmer_output, a.hmm_id, a.window, a.ratio, a.max_depth, a.hmmer_evalue_max
 
 
 def load_data(tab_file, hmmer_evalue_max=None):

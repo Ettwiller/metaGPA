@@ -21,10 +21,10 @@ Each retained sequence gets a unique name of the form
 used as its ID in the FASTA, alignment, tree, and mapping file.
 
 Usage:
-    python build_pfam_tree.py <tab_file> <faa_file> <pfam_id> <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE] [--localpair]
+    python build_pfam_tree.py --hmmer_output <tab_file> --faa <faa_file> --hmm_id <pfam_id> --ratio <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE] [--localpair]
 
 Example:
-    python build_pfam_tree.py data.tab proteins.faa PF00709.24 10 --domain_only --hmmer_evalue_max 1e-5
+    python build_pfam_tree.py --hmmer_output data.tab --faa proteins.faa --hmm_id PF00709.24 --ratio 10 --domain_only --hmmer_evalue_max 1e-5
 
 Requires `mafft` and `FastTree` (or `fasttree`) on PATH.
 """
@@ -45,36 +45,21 @@ gp = _load('get_proteins')  # find_hits, extract_sequences, find_orf_bounds
 
 
 def parse_args():
-    args = sys.argv[1:]
-
-    mode = 'domain_only'
-    if '--full_length' in args:
-        mode = 'full_length'
-        args.remove('--full_length')
-    if '--domain_only' in args:
-        mode = 'domain_only'
-        args.remove('--domain_only')
-
-    include_truncated = '--include_truncated' in args
-    if include_truncated:
-        args.remove('--include_truncated')
-
-    localpair = '--localpair' in args
-    if localpair:
-        args.remove('--localpair')
-
-    hmmer_evalue_max = None
-    if '--hmmer_evalue_max' in args:
-        idx = args.index('--hmmer_evalue_max')
-        hmmer_evalue_max = float(args[idx + 1])
-        del args[idx:idx + 2]
-
-    if len(args) != 4:
-        print(__doc__)
-        sys.exit(1)
-
-    tab_file, faa_file, pfam_id, ratio_cutoff = args[0], args[1], args[2], float(args[3])
-    return tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max, localpair
+    import argparse
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument('--hmmer_output',     required=True, metavar='TAB_FILE',      help='HMMER-format PFAM annotation tab file')
+    p.add_argument('--faa',              required=True, metavar='FAA_FILE',      help='Protein FASTA file (frame translations)')
+    p.add_argument('--hmm_id',           required=True, metavar='PFAM_ID',       help='PFAM domain ID (e.g. PF00709.24)')
+    p.add_argument('--ratio',            required=True, metavar='RATIO_CUTOFF',  type=float, help='Enrichment ratio cutoff')
+    mode_grp = p.add_mutually_exclusive_group()
+    mode_grp.add_argument('--domain_only', action='store_true', help='Extract aligned domain span only (default)')
+    mode_grp.add_argument('--full_length', action='store_true', help='Extract full ORF around domain')
+    p.add_argument('--include_truncated', action='store_true',  help='Keep sequences without flanking stop codons')
+    p.add_argument('--localpair',         action='store_true',  help='Use MAFFT L-INS-i (slower, more accurate)')
+    p.add_argument('--hmmer_evalue_max', default=None,  metavar='VALUE',         type=float, help='Max i-Evalue for HMMER hits')
+    a = p.parse_args()
+    mode = 'full_length' if a.full_length else 'domain_only'
+    return a.hmmer_output, a.faa, a.hmm_id, a.ratio, mode, a.include_truncated, a.hmmer_evalue_max, a.localpair
 
 
 def extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max=None):
