@@ -36,7 +36,7 @@ def parse_args():
     import argparse
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--hmmer_output',     required=True, metavar='TAB_FILE',      help='HMMER-format PFAM annotation tab file')
-    p.add_argument('--hmm_id',           required=True, metavar='PFAM_ID',       help='Seed PFAM domain ID (e.g. PF05014.22)')
+    p.add_argument('--hmm_id',           required=True, metavar='PFAM_ID',       help='Seed PFAM domain ID (e.g. PF05014.22); version suffix ignored', type=lambda x: x.split('.')[0])
     p.add_argument('--window',           required=True, metavar='WINDOW_BP',     type=int,   help='Window in bp around seed domain')
     p.add_argument('--ratio',            required=True, metavar='RATIO_CUTOFF',  type=float, help='Enrichment ratio cutoff')
     p.add_argument('--max_depth',        default=3,     metavar='N',             type=int,   help='Recursion depth (default: 3)')

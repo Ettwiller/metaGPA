@@ -37,7 +37,7 @@ def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--hmmer_output',     required=True, metavar='TAB_FILE',      help='HMMER-format PFAM annotation tab file')
     p.add_argument('--faa',              required=True, metavar='FAA_FILE',      help='Protein FASTA file (frame translations)')
-    p.add_argument('--hmm_id',           required=True, metavar='PFAM_ID',       help='PFAM domain ID (e.g. PF00709.24)')
+    p.add_argument('--hmm_id',           required=True, metavar='PFAM_ID',       help='PFAM domain ID (e.g. PF00709.24); version suffix ignored', type=lambda x: x.split('.')[0])
     p.add_argument('--ratio',            default=None,  metavar='RATIO_CUTOFF',  type=float, help='Enrichment ratio cutoff (optional)')
     mode_grp = p.add_mutually_exclusive_group()
     mode_grp.add_argument('--domain_only', action='store_true', help='Extract aligned domain span only (default)')
