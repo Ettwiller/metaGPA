@@ -2,11 +2,14 @@
 """
 Plot PFAM neighborhood around a reference PFAM domain.
 
+--hmmer_evalue_max caps hits by the domain's independent E-value (i-Evalue,
+column 13 of the tab file): only hits with i-Evalue < this threshold are kept.
+
 Usage:
-    python plot_pfam_neighborhood.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff>
+    python plot_pfam_neighborhood.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [--hmmer_evalue_max VALUE]
 
 Example:
-    python plot_pfam_neighborhood.py data.tab PF05014.22 1000 10
+    python plot_pfam_neighborhood.py data.tab PF05014.22 1000 10 --hmmer_evalue_max 1e-5
 """
 
 import re, json, colorsys, sys, os
@@ -16,23 +19,38 @@ from statsmodels.stats.multitest import multipletests
 
 
 def parse_args():
-    if len(sys.argv) != 5:
+    args = sys.argv[1:]
+
+    hmmer_evalue_max = None
+    if '--hmmer_evalue_max' in args:
+        idx = args.index('--hmmer_evalue_max')
+        hmmer_evalue_max = float(args[idx + 1])
+        del args[idx:idx + 2]
+
+    if len(args) != 4:
         print(__doc__)
         sys.exit(1)
-    tab_file   = sys.argv[1]
-    pfam_id    = sys.argv[2]   # e.g. PF05014.22  (prefix match used)
-    window     = int(sys.argv[3])
-    ratio_cut  = float(sys.argv[4])
-    return tab_file, pfam_id, window, ratio_cut
+    tab_file   = args[0]
+    pfam_id    = args[1]   # e.g. PF05014.22  (prefix match used)
+    window     = int(args[2])
+    ratio_cut  = float(args[3])
+    return tab_file, pfam_id, window, ratio_cut, hmmer_evalue_max
 
 
-def load_data(tab_file):
+def load_data(tab_file, hmmer_evalue_max=None):
     data = defaultdict(list)
     with open(tab_file) as f:
         for line in f:
             parts = line.split()
             if len(parts) < 19:
                 continue
+            if hmmer_evalue_max is not None:
+                try:
+                    i_evalue = float(parts[12])
+                except ValueError:
+                    continue
+                if i_evalue >= hmmer_evalue_max:
+                    continue
             contig_full = parts[0]
             m = re.match(r'^(.+?_ratio_[\d.]+)-\d+[FR]$', contig_full)
             if not m:
@@ -603,8 +621,10 @@ async function downloadPNG() {{
 
 
 def main():
-    tab_file, pfam_id, window, ratio_cut = parse_args()
-    data    = load_data(tab_file)
+    tab_file, pfam_id, window, ratio_cut, hmmer_evalue_max = parse_args()
+    if hmmer_evalue_max is not None:
+        print(f"E-value cutoff : i-Evalue < {hmmer_evalue_max}")
+    data    = load_data(tab_file, hmmer_evalue_max)
     js_data = build_js_data(data, pfam_id, window, ratio_cut)
 
     base_name = os.path.splitext(os.path.basename(tab_file))[0]

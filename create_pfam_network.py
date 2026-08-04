@@ -6,11 +6,14 @@ Generates an output folder containing:
   - network.html          : co-enrichment network (click node → neighborhood)
   - neighborhood_PF*.html : neighborhood plot for every node in the network
 
+--hmmer_evalue_max caps hits by the domain's independent E-value (i-Evalue,
+column 13 of the tab file): only hits with i-Evalue < this threshold are kept.
+
 Usage:
-    python pfam_linked_viz.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [max_depth]
+    python create_pfam_network.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [max_depth] [--hmmer_evalue_max VALUE]
 
 Example:
-    python pfam_linked_viz.py data.tab PF05014.22 1000 10 3
+    python create_pfam_network.py data.tab PF05014.22 1000 10 3 --hmmer_evalue_max 1e-5
 """
 
 import sys, os, re, json, importlib.util
@@ -30,11 +33,19 @@ net = _load('pfam_coenrichment_network')    # network script
 
 # ── Args ───────────────────────────────────────────────────────────────────────
 def parse_args():
-    if len(sys.argv) not in (5, 6):
+    args = sys.argv[1:]
+
+    hmmer_evalue_max = None
+    if '--hmmer_evalue_max' in args:
+        idx = args.index('--hmmer_evalue_max')
+        hmmer_evalue_max = float(args[idx + 1])
+        del args[idx:idx + 2]
+
+    if len(args) not in (4, 5):
         print(__doc__)
         sys.exit(1)
-    max_depth = int(sys.argv[5]) if len(sys.argv) == 6 else 3
-    return sys.argv[1], sys.argv[2], int(sys.argv[3]), float(sys.argv[4]), max_depth
+    max_depth = int(args[4]) if len(args) == 5 else 3
+    return args[0], args[1], int(args[2]), float(args[3]), max_depth, hmmer_evalue_max
 
 
 # ── Network HTML (click → neighborhood) ───────────────────────────────────────
@@ -249,11 +260,14 @@ function downloadPNG() {{
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
-    tab_file, pfam_id, window, ratio_cut, max_depth = parse_args()
+    tab_file, pfam_id, window, ratio_cut, max_depth, hmmer_evalue_max = parse_args()
 
     if not os.path.exists(tab_file):
         print(f"Error: file not found: {tab_file}", file=sys.stderr)
         sys.exit(1)
+
+    if hmmer_evalue_max is not None:
+        print(f"E-value cutoff : i-Evalue < {hmmer_evalue_max}")
 
     # Output directory
     base     = os.path.splitext(os.path.basename(tab_file))[0]
@@ -264,7 +278,7 @@ def main():
 
     # Load data once, shared by both scripts
     print("Loading data...")
-    data = net.load_data(tab_file)
+    data = net.load_data(tab_file, hmmer_evalue_max)
 
     # ── Build network ──────────────────────────────────────────────────────────
     print(f"Building co-enrichment network (depth={max_depth})...")

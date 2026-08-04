@@ -19,11 +19,14 @@ pass --include_truncated to keep it (best-effort boundary) with
 "(truncated)" noted in its header. --full_length outputs the full ORF span;
 --domain_only still outputs just the aligned domain span.
 
+--hmmer_evalue_max caps hits by the domain's independent E-value (i-Evalue,
+column 13 of the tab file): only hits with i-Evalue < this threshold are kept.
+
 Usage:
-    python get_proteins.py <tab_file> <faa_file> <pfam_id> [ratio_cutoff] [--domain_only|--full_length] [--include_truncated]
+    python get_proteins.py <tab_file> <faa_file> <pfam_id> [ratio_cutoff] [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE]
 
 Example:
-    python get_proteins.py data.tab proteins.faa PF00709.24 10 --domain_only
+    python get_proteins.py data.tab proteins.faa PF00709.24 10 --domain_only --hmmer_evalue_max 1e-5
 """
 
 import re, sys, os
@@ -44,13 +47,19 @@ def parse_args():
     if include_truncated:
         args.remove('--include_truncated')
 
+    hmmer_evalue_max = None
+    if '--hmmer_evalue_max' in args:
+        idx = args.index('--hmmer_evalue_max')
+        hmmer_evalue_max = float(args[idx + 1])
+        del args[idx:idx + 2]
+
     if len(args) not in (3, 4):
         print(__doc__)
         sys.exit(1)
 
     tab_file, faa_file, pfam_id = args[0], args[1], args[2]
     ratio_cutoff = float(args[3]) if len(args) == 4 else None
-    return tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated
+    return tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max
 
 
 def get_ratio(contig_id):
@@ -58,7 +67,7 @@ def get_ratio(contig_id):
     return float(m.group(1)) if m else 0.0
 
 
-def find_hits(tab_file, pfam_id, ratio_cutoff):
+def find_hits(tab_file, pfam_id, ratio_cutoff, hmmer_evalue_max=None):
     """Return one entry per domain hit for pfam_id (prefix match, version-agnostic)."""
     if not os.path.exists(tab_file):
         print(f"Error: file not found: {tab_file}", file=sys.stderr)
@@ -73,6 +82,13 @@ def find_hits(tab_file, pfam_id, ratio_cutoff):
                 continue
             if not parts[4].startswith(prefix):
                 continue
+            if hmmer_evalue_max is not None:
+                try:
+                    i_evalue = float(parts[12])
+                except ValueError:
+                    continue
+                if i_evalue >= hmmer_evalue_max:
+                    continue
             contig_id = parts[0]
             ratio = get_ratio(contig_id)
             if ratio_cutoff is not None and ratio < ratio_cutoff:
@@ -159,14 +175,16 @@ def find_orf_bounds(seq, start, end):
 
 
 def main():
-    tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated = parse_args()
+    tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max = parse_args()
 
     print(f"PFAM           : {pfam_id}")
     print(f"Mode           : {mode}")
     if ratio_cutoff is not None:
         print(f"Ratio cutoff   : >= {ratio_cutoff}")
+    if hmmer_evalue_max is not None:
+        print(f"E-value cutoff : i-Evalue < {hmmer_evalue_max}")
 
-    hits = find_hits(tab_file, pfam_id, ratio_cutoff)
+    hits = find_hits(tab_file, pfam_id, ratio_cutoff, hmmer_evalue_max)
     print(f"Domain hits    : {len(hits)}")
     if not hits:
         print("No hits found.", file=sys.stderr)

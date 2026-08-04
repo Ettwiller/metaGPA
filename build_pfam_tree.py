@@ -9,15 +9,22 @@ only to color each leaf as "selected" (ratio >= cutoff) or "unselected".
 Sequence extraction (--domain_only / --full_length / --include_truncated)
 works exactly as in get_proteins.py, whose functions this script reuses.
 
+--hmmer_evalue_max caps hits by the domain's independent E-value (i-Evalue,
+column 13 of the tab file): only hits with i-Evalue < this threshold are kept.
+
+By default, MAFFT runs its standard progressive alignment (FFT-NS-2). Pass
+--localpair to use L-INS-i instead (more accurate for divergent sequences,
+but all-pairs Smith-Waterman makes it much slower on large sequence sets).
+
 Each retained sequence gets a unique name of the form
 "<S|unselected>_<n>_<ratio>" (e.g. "S_1_3.7", "unselected_14_0.8"), which is
 used as its ID in the FASTA, alignment, tree, and mapping file.
 
 Usage:
-    python build_pfam_tree.py <tab_file> <faa_file> <pfam_id> <ratio_cutoff> [--domain_only|--full_length] [--include_truncated]
+    python build_pfam_tree.py <tab_file> <faa_file> <pfam_id> <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE] [--localpair]
 
 Example:
-    python build_pfam_tree.py data.tab proteins.faa PF00709.24 10 --domain_only
+    python build_pfam_tree.py data.tab proteins.faa PF00709.24 10 --domain_only --hmmer_evalue_max 1e-5
 
 Requires `mafft` and `FastTree` (or `fasttree`) on PATH.
 """
@@ -52,21 +59,31 @@ def parse_args():
     if include_truncated:
         args.remove('--include_truncated')
 
+    localpair = '--localpair' in args
+    if localpair:
+        args.remove('--localpair')
+
+    hmmer_evalue_max = None
+    if '--hmmer_evalue_max' in args:
+        idx = args.index('--hmmer_evalue_max')
+        hmmer_evalue_max = float(args[idx + 1])
+        del args[idx:idx + 2]
+
     if len(args) != 4:
         print(__doc__)
         sys.exit(1)
 
     tab_file, faa_file, pfam_id, ratio_cutoff = args[0], args[1], args[2], float(args[3])
-    return tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated
+    return tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max, localpair
 
 
-def extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated):
+def extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max=None):
     """Return a list of {name, ratio, selected} dicts, one per unique sequence,
     in the order hits were encountered in tab_file. No ratio filtering (all
     hits kept); exact-duplicate sequences are collapsed to their first
     occurrence.
     """
-    hits = gp.find_hits(tab_file, pfam_id, None)
+    hits = gp.find_hits(tab_file, pfam_id, None, hmmer_evalue_max)
     if not hits:
         print("No hits found.", file=sys.stderr)
         sys.exit(1)
@@ -155,13 +172,16 @@ def run(cmd, stdout_path, step_name):
 
 
 def main():
-    tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated = parse_args()
+    tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max, localpair = parse_args()
 
     print(f"PFAM           : {pfam_id}")
     print(f"Mode           : {mode}")
     print(f"Ratio cutoff   : >= {ratio_cutoff} (selected vs. unselected coloring only)")
+    if hmmer_evalue_max is not None:
+        print(f"E-value cutoff : i-Evalue < {hmmer_evalue_max}")
+    print(f"MAFFT mode     : {'L-INS-i (--localpair)' if localpair else 'FFT-NS-2 (default)'}")
 
-    records = extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated)
+    records = extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max)
     if len(records) < 2:
         print("Error: need at least 2 unique sequences to align/build a tree.", file=sys.stderr)
         sys.exit(1)
@@ -195,7 +215,11 @@ def main():
         for r in records:
             f.write(f">{r['name']}\n{r['seq']}\n")
 
-    run([mafft_bin, '--maxiterate', '2', '--localpair', seq_path], aligned_path, "MAFFT")
+    mafft_cmd = [mafft_bin, '--maxiterate', '2']
+    if localpair:
+        mafft_cmd.append('--localpair')
+    mafft_cmd.append(seq_path)
+    run(mafft_cmd, aligned_path, "MAFFT")
     run([fasttree_bin, '-gamma', aligned_path], tree_path, "FastTree")
 
     with open(mapping_path, 'w') as f:
