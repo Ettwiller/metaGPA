@@ -12,20 +12,20 @@ every node in that network, a linked neighborhood plot. Output is a folder of
 HTML files — click a node in `network.html` to open its neighborhood plot.
 
 ```
-python create_pfam_network.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [max_depth] [--hmmer_evalue_max VALUE]
+python create_pfam_network.py --hmmer_output <tab_file> --hmm_id <pfam_id> --window <window_bp> --ratio <ratio_cutoff> [--max_depth N] [--hmmer_evalue_max VALUE]
 ```
 
 Example:
 
 ```
-python create_pfam_network.py data.tab PF05014.22 1000 10 3
+python create_pfam_network.py --hmmer_output data.tab --hmm_id PF05014.22 --window 1000 --ratio 10 --max_depth 3
 ```
 
-- `tab_file` — hmmscan/hmmsearch-style domain table (whitespace-delimited).
-- `pfam_id` — seed PFAM accession, e.g. `PF05014.22`.
-- `window_bp` — ± window (bp) around the seed domain to look for neighboring domains.
-- `ratio_cutoff` — contigs with ratio at or above this are "high-ratio"; used for enrichment testing.
-- `max_depth` — optional, default `3`. How many recursive hops from the seed to follow when
+- `--hmmer_output` — hmmscan/hmmsearch-style domain table (whitespace-delimited).
+- `--hmm_id` — seed PFAM accession, e.g. `PF05014.22`.
+- `--window` — ± window (bp) around the seed domain to look for neighboring domains.
+- `--ratio` — contigs with ratio at or above this are "high-ratio"; used for enrichment testing.
+- `--max_depth` — optional, default `3`. How many recursive hops from the seed to follow when
   expanding the network.
 - `--hmmer_evalue_max` — optional. Only keep domain hits with i-Evalue (column 13) below
   this threshold (see [Input format](#input-format)).
@@ -43,7 +43,7 @@ Can also be run directly to produce just `network.html` (its node clicks link to
 instead of local neighborhood pages):
 
 ```
-python pfam_coenrichment_network.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [max_depth] [--hmmer_evalue_max VALUE]
+python pfam_coenrichment_network.py --hmmer_output <tab_file> --hmm_id <pfam_id> --window <window_bp> --ratio <ratio_cutoff> [--max_depth N] [--hmmer_evalue_max VALUE]
 ```
 
 ### `plot_pfam_neighborhood.py`
@@ -51,7 +51,7 @@ python pfam_coenrichment_network.py <tab_file> <pfam_id> <window_bp> <ratio_cuto
 Standalone version of the neighborhood plot for a single PFAM domain:
 
 ```
-python plot_pfam_neighborhood.py <tab_file> <pfam_id> <window_bp> <ratio_cutoff> [--hmmer_evalue_max VALUE]
+python plot_pfam_neighborhood.py --hmmer_output <tab_file> --hmm_id <pfam_id> --window <window_bp> --ratio <ratio_cutoff> [--hmmer_evalue_max VALUE]
 ```
 
 ### `get_proteins.py`
@@ -61,19 +61,19 @@ highest to lowest contig ratio, as a FASTA file. If two or more hits produce
 the exact same sequence, only the highest-ratio instance is kept.
 
 ```
-python get_proteins.py <tab_file> <faa_file> <pfam_id> [ratio_cutoff] [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE]
+python get_proteins.py --hmmer_output <tab_file> --faa <faa_file> --hmm_id <pfam_id> [--ratio <ratio_cutoff>] [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE]
 ```
 
 Example:
 
 ```
-python get_proteins.py data.tab proteins.faa PF00709.24 10 --domain_only
+python get_proteins.py --hmmer_output data.tab --faa proteins.faa --hmm_id PF00709.24 --ratio 10 --domain_only
 ```
 
-- `tab_file` — same domain table used by the other scripts.
-- `faa_file` — protein FASTA matching the hmmer output's contig IDs (see [Input format](#input-format)).
-- `pfam_id` — PFAM accession to extract, e.g. `PF00709.24`.
-- `ratio_cutoff` — optional. Only include contigs with ratio at or above this value.
+- `--hmmer_output` — same domain table used by the other scripts.
+- `--faa` — protein FASTA matching the hmmer output's contig IDs (see [Input format](#input-format)).
+- `--hmm_id` — PFAM accession to extract, e.g. `PF00709.24`.
+- `--ratio` — optional. Only include contigs with ratio at or above this value.
 - `--hmmer_evalue_max` — optional. Only include hits with i-Evalue (column 13) below this
   threshold (see [Input format](#input-format)).
 Since `faa_file` is a raw frame translation (not called ORFs) and contains `*` stop
@@ -99,17 +99,17 @@ logic, but — unlike `get_proteins.py` — includes every hit regardless of rat
 "selected" (ratio ≥ cutoff) or "unselected", not to filter which hits are included.
 
 ```
-python build_pfam_tree.py <tab_file> <faa_file> <pfam_id> <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE] [--localpair]
+python build_pfam_tree.py --hmmer_output <tab_file> --faa <faa_file> --hmm_id <pfam_id> --ratio <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE] [--localpair]
 ```
 
 Example:
 
 ```
-python build_pfam_tree.py data.tab proteins.faa PF00709.24 10 --domain_only
+python build_pfam_tree.py --hmmer_output data.tab --faa proteins.faa --hmm_id PF00709.24 --ratio 10 --domain_only
 ```
 
-- `tab_file`, `faa_file`, `pfam_id` — same as `get_proteins.py`.
-- `ratio_cutoff` — required. Hits with ratio ≥ this are colored "selected"; below it,
+- `--hmmer_output`, `--faa`, `--hmm_id` — same as `get_proteins.py`.
+- `--ratio` — required. Hits with ratio ≥ this are colored "selected"; below it,
   "unselected". Does not filter which sequences are included.
 - `--domain_only` / `--full_length` / `--include_truncated` / `--hmmer_evalue_max` — same
   as `get_proteins.py`.
@@ -141,16 +141,16 @@ duplicates removed) but splits sequences into exactly two groups for GroupSim in
 of coloring a tree: **group1** = ratio `< ratio_cutoff`, **group2** = ratio `>= ratio_cutoff`.
 
 ```
-python build_pfam_groupsim.py <tab_file> <faa_file> <pfam_id> <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE]
+python build_pfam_groupsim.py --hmmer_output <tab_file> --faa <faa_file> --hmm_id <pfam_id> --ratio <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE]
 ```
 
 Example:
 
 ```
-python build_pfam_groupsim.py data.tab proteins.faa PF00709.24 10 --domain_only
+python build_pfam_groupsim.py --hmmer_output data.tab --faa proteins.faa --hmm_id PF00709.24 --ratio 10 --domain_only
 ```
 
-- `tab_file`, `faa_file`, `pfam_id`, `ratio_cutoff`, mode flags — same as `build_pfam_tree.py`.
+- `--hmmer_output`, `--faa`, `--hmm_id`, `--ratio`, mode flags — same as `build_pfam_tree.py`.
 - Fails with a clear error if either group ends up empty, or if fewer than 4 sequences
   remain in total — GroupSim needs both groups meaningfully populated.
 
@@ -177,7 +177,7 @@ a venv at `vendor/groupsim-env`, as the setup below creates); otherwise, put its
 ## Example
 
 ```
-python create_pfam_network.py data.tab PF00709.24 1000 10 2
+python create_pfam_network.py --hmmer_output data.tab --hmm_id PF00709.24 --window 1000 --ratio 10 --max_depth 2
 ```
 
 `PF00709` (Adenylsucc_synt) is the seed domain (red). Nodes found by direct
@@ -195,7 +195,7 @@ containing that domain, colored by which neighboring PFAMs they carry, split
 into high-ratio and low-ratio panels and ranked by ratio:
 
 ```
-python plot_pfam_neighborhood.py data.tab PF15891.8 1000 10
+python plot_pfam_neighborhood.py --hmmer_output data.tab --hmm_id PF15891.8 --window 1000 --ratio 10
 ```
 
 ![Example PF15891 neighborhood plot](docs/images/pf15891_neighborhood_example.png)
