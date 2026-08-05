@@ -125,7 +125,7 @@ and mapping file. Output is written to a folder next to `tab_file` named
 - `sequences.fasta` — unaligned, deduplicated sequences.
 - `aligned.fasta` — MAFFT alignment (`mafft --maxiterate 2`, plus `--localpair` if passed).
 - `tree.nwk` — FastTree phylogeny (`FastTree -gamma`), built from the alignment.
-- `mapping.txt` — tab-separated `name`, `leaf_dot_color`, `leaf_label_color`,
+- `mapping.txt` — tab-separated `name`, `leaf_dot_color`, `branch_color`,
   `bar1_height`, `bar1_gradient` columns for annotating the tree: selected leaves get
   `bp_green`/`ptm_rose`, unselected get `k_grey`/`ptm_sand`; `bar1_height` is the
   contig's ratio.

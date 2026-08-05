@@ -208,7 +208,7 @@ def main():
     run([fasttree_bin, '-gamma', aligned_path], tree_path, "FastTree")
 
     with open(mapping_path, 'w') as f:
-        f.write("name\tleaf_dot_color\tleaf_label_color\tbar1_height\tbar1_gradient\n")
+        f.write("name\tleaf_dot_color\tbranch_color\tbar1_height\tbar1_gradient\n")
         for r in records:
             dot_color   = 'bp_green' if r['selected'] else 'k_grey'
             label_color = 'ptm_rose' if r['selected'] else 'ptm_sand'
