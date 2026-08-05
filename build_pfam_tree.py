@@ -57,9 +57,10 @@ def parse_args():
     p.add_argument('--include_truncated', action='store_true',  help='Keep sequences without flanking stop codons')
     p.add_argument('--localpair',         action='store_true',  help='Use MAFFT L-INS-i (slower, more accurate)')
     p.add_argument('--hmmer_evalue_max', default=None,  metavar='VALUE',         type=float, help='Max i-Evalue for HMMER hits')
+    p.add_argument('--max_bar',          default=None,  metavar='XX',            type=float, help='Cap bar1_height in mapping.txt at this value')
     a = p.parse_args()
     mode = 'full_length' if a.full_length else 'domain_only'
-    return a.hmmer_output, a.faa, a.hmm_id, a.ratio, mode, a.include_truncated, a.hmmer_evalue_max, a.localpair
+    return a.hmmer_output, a.faa, a.hmm_id, a.ratio, mode, a.include_truncated, a.hmmer_evalue_max, a.localpair, a.max_bar
 
 
 def extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max=None):
@@ -157,7 +158,7 @@ def run(cmd, stdout_path, step_name):
 
 
 def main():
-    tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max, localpair = parse_args()
+    tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max, localpair, max_bar = parse_args()
 
     print(f"PFAM           : {pfam_id}")
     print(f"Mode           : {mode}")
@@ -165,6 +166,9 @@ def main():
     if hmmer_evalue_max is not None:
         print(f"E-value cutoff : i-Evalue < {hmmer_evalue_max}")
     print(f"MAFFT mode     : {'L-INS-i (--localpair)' if localpair else 'FFT-NS-2 (default)'}")
+
+    if max_bar is not None:
+        print(f"Bar cap        : bar1_height capped at {max_bar}")
 
     records = extract_all_sequences(tab_file, faa_file, pfam_id, ratio_cutoff, mode, include_truncated, hmmer_evalue_max)
     if len(records) < 2:
@@ -212,7 +216,8 @@ def main():
         for r in records:
             dot_color   = 'bp_green' if r['selected'] else 'k_grey'
             label_color = 'ptm_rose' if r['selected'] else 'ptm_sand'
-            f.write(f"{r['name']}\t{dot_color}\t{label_color}\t{r['ratio']:.1f}\tPurples\n")
+            bar_height  = min(r['ratio'], max_bar) if max_bar is not None else r['ratio']
+            f.write(f"{r['name']}\t{dot_color}\t{label_color}\t{bar_height:.1f}\tPurples\n")
 
     print(f"Alignment      : {aligned_path}")
     print(f"Tree           : {tree_path}")
