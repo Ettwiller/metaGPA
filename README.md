@@ -99,7 +99,7 @@ logic, but — unlike `get_proteins.py` — includes every hit regardless of rat
 "selected" (ratio ≥ cutoff) or "unselected", not to filter which hits are included.
 
 ```
-python build_pfam_tree.py --hmmer_output <tab_file> --faa <faa_file> --hmm_id <pfam_id> --ratio <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE] [--localpair]
+python build_pfam_tree.py --hmmer_output <tab_file> --faa <faa_file> --hmm_id <pfam_id> --ratio <ratio_cutoff> [--domain_only|--full_length] [--include_truncated] [--hmmer_evalue_max VALUE] [--localpair] [--max_bar XX]
 ```
 
 Example:
@@ -116,6 +116,8 @@ python build_pfam_tree.py --hmmer_output data.tab --faa proteins.faa --hmm_id PF
 - `--localpair` — optional. Use MAFFT's L-INS-i mode (all-pairs local alignment) instead
   of the default progressive FFT-NS-2. More accurate for divergent sequences, but its
   all-pairs Smith-Waterman step scales poorly and gets slow on large sequence sets.
+- `--max_bar XX` — optional. Cap `bar1_height` in `mapping.txt` at `XX`; any contig with
+  ratio above `XX` is written as `XX`.
 
 Each unique sequence gets an ID of the form `<S|unselected>_<n>_<ratio>` (e.g.
 `S_1_17.7`, `unselected_9_4.3`) — unique, used as-is in the FASTA, alignment, tree,
@@ -128,7 +130,7 @@ and mapping file. Output is written to a folder next to `tab_file` named
 - `mapping.txt` — tab-separated `name`, `leaf_dot_color`, `branch_color`,
   `bar1_height`, `bar1_gradient` columns for annotating the tree: selected leaves get
   `bp_green`/`ptm_rose`, unselected get `k_grey`/`ptm_sand`; `bar1_height` is the
-  contig's ratio.
+  contig's ratio (capped at `--max_bar` if provided).
 
 Requires `mafft` and `FastTree` (or `fasttree`) on `PATH` — see [Dependencies](#dependencies).
 
